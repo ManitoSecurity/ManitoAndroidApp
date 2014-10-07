@@ -13,7 +13,7 @@ import android.os.Build;
 
 public class MainActivity extends Activity {
 
-    @Override // test 1
+    @Override // hello world
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
