@@ -23,7 +23,7 @@ public class SetUpWifi extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.set_up_wifi);
-        mainText = (TextView) findViewById(R.id.wifi_tv);
+        //mainText = (TextView) findViewById(R.id.wifi_tv);
         /*mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         if (!mainWifi.isWifiEnabled())
         {

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:weightSum="5"
+    android:clipChildren="false"
+    android:background="@color/white"
+    android:layout_height="match_parent">
+    <RelativeLayout
+        android:id="@+id/welcomeSplash"
+        android:background="@color/green"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="4">
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/button_wrapper"
+        android:layout_height="fill_parent"
+        android:layout_width="fill_parent"
+        android:gravity="bottom"
+        android:clipChildren="false"
+        android:layout_weight="1">
+
+        <EditText
+            android:id="@+id/edit_text_out"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/button_send"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/edit_text_out"
+            android:text="@string/send" />
+
+        <ListView
+            android:id="@+id/in"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:stackFromBottom="true"
+            android:layout_below="@id/button_send"
+            android:transcriptMode="alwaysScroll" />
+    </RelativeLayout>
+
+</LinearLayout>
