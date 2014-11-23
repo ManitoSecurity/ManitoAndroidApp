@@ -54,6 +54,9 @@ public class SetUpBT extends Activity {
     private EditText mOutEditText;
     private Button mSendButton;
 
+    // Notification Handler
+    Notification_Service mNotification;
+
     /**
      * Name of the connected device
      */
@@ -86,6 +89,7 @@ public class SetUpBT extends Activity {
         //setHasOptionsMenu(true);
         // Get local Bluetooth adapter
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        mNotification = new Notification_Service(getApplicationContext());
 
         // If the adapter is null, then Bluetooth is not supported
         if (mBluetoothAdapter == null) {
@@ -289,6 +293,11 @@ public class SetUpBT extends Activity {
                     byte[] readBuf = (byte[]) msg.obj;
                     // construct a string from the valid bytes in the buffer
                     String readMessage = new String(readBuf, 0, msg.arg1);
+                    if(readMessage.contains("detection")){
+                        mNotification.displayNotification("100");
+                        Toast.makeText(getApplicationContext(), "BLUETUUTHE!!",
+                                Toast.LENGTH_LONG).show();
+                    }
                     mConversationArrayAdapter.add(mConnectedDeviceName + ":  " + readMessage);
                     break;
                 case Constants.MESSAGE_DEVICE_NAME:

@@ -10,7 +10,7 @@
     <uses-permission android:name="android.permission.BLUETOOTH_PRIVILEGED" />
 
     <uses-sdk
-        android:minSdkVersion="14"
+        android:minSdkVersion="16"
         android:targetSdkVersion="19" />
 
     <application
@@ -33,6 +33,7 @@
         <activity android:name=".SetUpWifi" />
         <activity android:name=".SetUpBT" />
         <activity android:name=".BTDeviceList" />
+        <activity android:name=".Notification_Service" />
     </application>
 
 </manifest>
