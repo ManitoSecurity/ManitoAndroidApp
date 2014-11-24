@@ -38,7 +38,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 /**
- * This fragment controls Bluetooth to communicate with other devices.
+ * This activity controls Bluetooth to communicate with other devices.
  */
 public class SetUpBT extends Activity {
 
@@ -294,7 +294,7 @@ public class SetUpBT extends Activity {
                     // construct a string from the valid bytes in the buffer
                     String readMessage = new String(readBuf, 0, msg.arg1);
                     if(readMessage.contains("detection")){
-                        mNotification.displayNotification("100");
+                        mNotification.displayNotification();
                         Toast.makeText(getApplicationContext(), "BLUETUUTHE!!",
                                 Toast.LENGTH_LONG).show();
                     }
