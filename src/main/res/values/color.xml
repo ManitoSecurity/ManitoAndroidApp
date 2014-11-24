@@ -4,6 +4,6 @@
     <item name="green" type="color">#2BB29D</item>
     <item name="dark" type="color">#22262B</item>
     <item name="medium" type="color">#33363C</item>
-    <item name="light" type="color">#C3C3C3</item>
+    <item name="light" type="color">#F0F2F2</item>
     <item name="white" type="color">#ffffff</item>
 </resources>

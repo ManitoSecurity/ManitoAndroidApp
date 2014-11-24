@@ -56,9 +56,13 @@ public class MainActivity extends Activity {
         // as you specify a parent activity in AndroidManifest.xml.
         switch (item.getItemId()) {
             case R.id.action_settings:
-                Intent intent = new Intent(getApplicationContext(), SetUpWifi.class);
-                startActivity(intent);
-                return true; //this is a comment
+                Intent settings = new Intent(getApplicationContext(), SetUpBT.class);
+                startActivity(settings);
+                return true;
+            case R.id.developer_setting:
+                Intent developer = new Intent(getApplicationContext(), DeveloperChat.class);
+                startActivity(developer);
+                return true;
         }
         return super.onOptionsItemSelected(item);
     }

@@ -34,6 +34,10 @@
         <activity android:name=".SetUpBT" />
         <activity android:name=".BTDeviceList" />
         <activity android:name=".Notification_Service" />
+
+        <activity android:name=".DeveloperChat"
+            android:windowSoftInputMode="adjustPan" >
+        </activity>
     </application>
 
 </manifest>
