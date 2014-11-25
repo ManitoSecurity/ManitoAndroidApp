@@ -3,6 +3,12 @@
 
     <string name="app_name">Manito Security</string>
     <string name="hello_world">Hello world!</string>
+
+    <!--  Set Up Text -->
+    <string name="bluetooth_set_up">Bluetooth</string>
+    <string name="scan">Scan for Devices</string>
+
+    <!--  Menu Items -->
     <string name="action_settings">Settings</string>
     <string name="developer_setting">Developer Mode</string>
 

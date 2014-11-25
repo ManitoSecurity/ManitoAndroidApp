@@ -22,17 +22,21 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
-import android.view.inputmethod.EditorInfo;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -50,9 +54,10 @@ public class SetUpBT extends Activity {
     private static final int REQUEST_ENABLE_BT = 3;
 
     // Layout Views
-    private ListView mConversationView;
-    private EditText mOutEditText;
-    private Button mSendButton;
+    private Button mRefreshButton;
+    private ImageView mRefreshIcon;
+    private Animation slideUp, spin;
+
 
     // Notification Handler
     Notification_Service mNotification;
@@ -81,6 +86,9 @@ public class SetUpBT extends Activity {
      * Member object for the chat services
      */
     private BTChatService mChatService = null;
+    private BTList mBTListClass = new BTList();
+    private ArrayAdapter<String> mBTList;
+    private ArrayAdapter<String> mNewBTList;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -90,6 +98,20 @@ public class SetUpBT extends Activity {
         // Get local Bluetooth adapter
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         mNotification = new Notification_Service(getApplicationContext());
+
+        mRefreshButton = new Button(this);
+        mRefreshIcon = (ImageView) findViewById(R.id.refresh_icon);
+        slideUp     = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slide_up);
+        spin        = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.spin);
+        spin.setRepeatCount(Animation.INFINITE);
+
+        // Register for broadcasts when a device is discovered
+        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        this.registerReceiver(mBTReceiver, filter);
+
+        // Register for broadcasts when discovery has finished
+        filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        this.registerReceiver(mBTReceiver, filter);
 
         // If the adapter is null, then Bluetooth is not supported
         if (mBluetoothAdapter == null) {
@@ -109,7 +131,7 @@ public class SetUpBT extends Activity {
             startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
             // Otherwise, setup the chat session
         } else if (mChatService == null) {
-            setupChat();
+            setupUI();
         }
     }
 
@@ -118,6 +140,7 @@ public class SetUpBT extends Activity {
         super.onDestroy();
         if (mChatService != null) {
             mChatService.stop();
+            this.unregisterReceiver(mBTReceiver);
         }
     }
 
@@ -133,37 +156,38 @@ public class SetUpBT extends Activity {
             if (mChatService.getState() == BTChatService.STATE_NONE) {
                 // Start the Bluetooth chat services
                 mChatService.start();
+                mBTListClass.makeList(mBluetoothAdapter, this);
             }
         }
     }
 
     /**
-     * Set up the UI and background operations for chat.
+     * Set up the UI and background operations
      */
-    private void setupChat() {
-        Log.d(TAG, "setupChat()");
+    private void setupUI() {
+        Log.d(TAG, "setupUI()");
 
-        mConversationView = (ListView) findViewById(R.id.in);
-        mOutEditText = (EditText) findViewById(R.id.edit_text_out);
-        mSendButton = (Button) findViewById(R.id.button_send);
+        //Get the list of
+        mBTList = new ArrayAdapter<String>(this,  R.layout.device_name);
+        mNewBTList = new ArrayAdapter<String>(this,  R.layout.device_name);
+        mBTList = mBTListClass.makeList(mBluetoothAdapter, getApplicationContext());
+        ListView pairedListView = (ListView) findViewById(R.id.btlist);
+        pairedListView.setOnItemClickListener(mDeviceClickListener);
+        pairedListView.setAdapter(mBTList);
 
-        // Initialize the array adapter for the conversation thread
-        mConversationArrayAdapter = new ArrayAdapter<String>(this, R.layout.message);
-
-        mConversationView.setAdapter(mConversationArrayAdapter);
-
-        // Initialize the compose field with a listener for the return key
-        mOutEditText.setOnEditorActionListener(mWriteListener);
+        setUpButton(mRefreshButton);
+        pairedListView.addFooterView(mRefreshButton);
 
         // Initialize the send button with a listener that for click events
-        mSendButton.setOnClickListener(new View.OnClickListener() {
+        mRefreshButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 // Send a message using content of the edit text widget
                 View view = v.getRootView();
                 if (null != view) {
-                    TextView textView = (TextView) view.findViewById(R.id.edit_text_out);
-                    String message = textView.getText().toString();
-                    sendMessage(message);
+                    doBTDiscovery();
+                    mRefreshButton.setBackgroundColor(getResources().getColor(R.color.green));
+                    mRefreshButton.setText("Scanning...");
+                    Log.d(TAG, "refresh button pushed");
                 }
             }
         });
@@ -173,9 +197,15 @@ public class SetUpBT extends Activity {
 
         // Initialize the buffer for outgoing messages
         mOutStringBuffer = new StringBuffer("");
+    }
 
-        Intent serverIntent = new Intent(this, BTDeviceList.class);
-        startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE_SECURE);
+    /**
+     * Set up Refresh Button
+     */
+    private void setUpButton(Button b){
+        b.setText(R.string.scan);
+        b.setTextColor(getResources().getColor(R.color.white));
+        b.setBackgroundColor(getResources().getColor(R.color.dark));
     }
 
     /**
@@ -189,6 +219,24 @@ public class SetUpBT extends Activity {
             startActivity(discoverableIntent);
         }
     }
+
+    /**
+     * The on-click listener for all devices in the ListViews
+     */
+    private AdapterView.OnItemClickListener mDeviceClickListener
+            = new AdapterView.OnItemClickListener() {
+        public void onItemClick(AdapterView<?> av, View v, int arg2, long arg3) {
+            // Cancel discovery because it's costly and we're about to connect
+            mBluetoothAdapter.cancelDiscovery();
+
+            // Get the device MAC address, which is the last 17 chars in the View
+            String info = ((TextView) v).getText().toString();
+            String address = info.substring(info.length() - 17);
+
+            // Create the result Intent and include the MAC address
+            connectDevice(address.toString(), true);
+        }
+    };
 
     /**
      * Sends a message.
@@ -210,24 +258,8 @@ public class SetUpBT extends Activity {
 
             // Reset out string buffer to zero and clear the edit text field
             mOutStringBuffer.setLength(0);
-            mOutEditText.setText(mOutStringBuffer);
         }
     }
-
-    /**
-     * The action listener for the EditText widget, to listen for the return key
-     */
-    private TextView.OnEditorActionListener mWriteListener
-            = new TextView.OnEditorActionListener() {
-        public boolean onEditorAction(TextView view, int actionId, KeyEvent event) {
-            // If the action is a key-up event on the return key, send the message
-            if (actionId == EditorInfo.IME_NULL && event.getAction() == KeyEvent.ACTION_UP) {
-                String message = view.getText().toString();
-                sendMessage(message);
-            }
-            return true;
-        }
-    };
 
     /**
      * Updates the status on the action bar.
@@ -318,6 +350,8 @@ public class SetUpBT extends Activity {
         }
     };
 
+
+    /*
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
             case REQUEST_CONNECT_DEVICE_SECURE:
@@ -336,7 +370,7 @@ public class SetUpBT extends Activity {
                 // When the request to enable Bluetooth returns
                 if (resultCode == Activity.RESULT_OK) {
                     // Bluetooth is now enabled, so set up a chat session
-                    setupChat();
+                    setupUI();
                 } else {
                     // User did not enable Bluetooth or an error occurred
                     Log.d(TAG, "BT not enabled");
@@ -346,17 +380,14 @@ public class SetUpBT extends Activity {
                 }
         }
     }
+    */
 
     /**
      * Establish connection with other device
      *
-     * @param data   An {@link Intent} with {@link BTDeviceList#EXTRA_DEVICE_ADDRESS} extra.
      * @param secure Socket Security type - Secure (true) , Insecure (false)
      */
-    private void connectDevice(Intent data, boolean secure) {
-        // Get the device MAC address
-        String address = data.getExtras()
-                .getString(BTDeviceList.EXTRA_DEVICE_ADDRESS);
+    private void connectDevice(String address, boolean secure) {
         // Get the BluetoothDevice object
         BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
         // Attempt to connect to the device
@@ -393,4 +424,62 @@ public class SetUpBT extends Activity {
     }
 */
 
+    /**
+     * Start device discover with the BluetoothAdapter
+     */
+    public void doBTDiscovery() {
+        Log.d(TAG, "doBTDiscovery()");
+
+        //clear the list of new BT devices
+        mNewBTList.clear();
+
+        // If we're already discovering, stop it
+        if (mBluetoothAdapter.isDiscovering()) {
+            mBluetoothAdapter.cancelDiscovery();
+        }
+
+        // Request discover from BluetoothAdapter
+        mBluetoothAdapter.startDiscovery();
+        spin.setRepeatCount(Animation.INFINITE);
+        mRefreshIcon.startAnimation(spin);
+    }
+
+    /**
+     * The BroadcastReceiver that listens for discovered devices
+     */
+    private final BroadcastReceiver mBTReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+
+            // When discovery finds a device
+            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                // Get the BluetoothDevice object from the Intent
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                // If it's already paired or has been added, don't add it again
+                if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
+                    if(mBTList.getPosition(device.getName() + "\n" + device.getAddress()) >= 0){
+                        int position = mBTList.getPosition(device.getName() + "\n" + device.getAddress());
+                        String p = Integer.toString(position);
+                        Log.d(TAG, "already added: " + device.getName() + " " + p);
+                    } else {
+                        Log.d(TAG, "added:" + device.getName());
+                        mBTList.add(device.getName() + "\n" + device.getAddress());
+                        mNewBTList.add(device.getName() + "\n" + device.getAddress());
+                        mBTList.notifyDataSetChanged();
+                    }
+                }
+                // When discovery is finished, change the Activity title
+            } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
+                Log.d(TAG, "finished discovering");
+                if (mNewBTList.getCount() == 0) {
+                    Log.d(TAG, "added none");
+                    Toast.makeText(getApplicationContext(), "No New Devices Found", Toast.LENGTH_SHORT).show();
+                }
+                mRefreshButton.setBackgroundColor(getResources().getColor(R.color.dark));
+                mRefreshButton.setText("Scan for Devices");
+                spin.setRepeatCount(0);
+            }
+        }
+    };
 }
