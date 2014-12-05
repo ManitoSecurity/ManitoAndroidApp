@@ -93,7 +93,9 @@ public class BTList {
         // If there are paired devices, add each one to the ArrayAdapter
         if (pairedDevices.size() > 0) {
             for (BluetoothDevice device : pairedDevices) {
-                pairedDevicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());
+                if(device.getName() != null){
+                    pairedDevicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());
+                }
             }
         } else {
             String noDevices = context.getResources().getText(R.string.none_paired).toString();

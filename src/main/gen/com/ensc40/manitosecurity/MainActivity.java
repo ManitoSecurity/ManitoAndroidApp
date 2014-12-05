@@ -4,11 +4,14 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.preference.PreferenceManager;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 public class MainActivity extends Activity {
 
@@ -16,6 +19,12 @@ public class MainActivity extends Activity {
     private SharedPreferences settings;
     SharedPreferences.Editor editor;
     String TAG = "MAINTAG";
+
+    /**
+     * Member object for the chat services
+     */
+    private BTChatService mChatService = null;
+    private StringBuffer mOutStringBuffer;
 
 
     @Override
@@ -30,7 +39,8 @@ public class MainActivity extends Activity {
 
         //Set up finished
         //if(!settings.getBoolean("setUp", false)) {setUpFinished();}
-
+        mChatService = new BTChatService(this, mHandler);
+        mOutStringBuffer = new StringBuffer("");
         setUpUI();
 
     }
@@ -86,11 +96,13 @@ public class MainActivity extends Activity {
                 if(settings.getBoolean("armState", false) == true){			//if armed -> disarm
                     imageState.setImageResource(R.drawable.button_off);
                     editor.putBoolean("armState", false).commit();
+                    sendMessage("D");
                 }
 
                 else{   //disarm -> arm
                     imageState.setImageResource(R.drawable.button_on);
                     editor.putBoolean("armState", true).commit();
+                    sendMessage("A");
                 }
             }
         });
@@ -103,4 +115,52 @@ public class MainActivity extends Activity {
         startMain.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(startMain);
     }
+
+    private final Handler mHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case Constants.MESSAGE_WRITE:
+                    byte[] writeBuf = (byte[]) msg.obj;
+                    // construct a string from the buffer
+                    String writeMessage = new String(writeBuf);
+                    break;
+                case Constants.MESSAGE_READ:
+                    byte[] readBuf = (byte[]) msg.obj;
+                    // construct a string from the valid bytes in the buffer
+                    String readMessage = new String(readBuf, 0, msg.arg1);
+                    break;
+                case Constants.MESSAGE_TOAST:
+                    if (null != this) {
+                        Toast.makeText(getApplicationContext(), msg.getData().getString(Constants.TOAST),
+                                Toast.LENGTH_SHORT).show();
+                    }
+                    break;
+            }
+        }
+    };
+
+    /**
+     * Sends a message.
+     *
+     * @param message A string of text to send.
+     */
+    private void sendMessage(String message) {
+        // Check that we're actually connected before trying anything
+        if (mChatService.getState() != BTChatService.STATE_CONNECTED) {
+            Toast.makeText(this, "Not Connected", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Check that there's actually something to send
+        if (message.length() > 0) {
+            // Get the message bytes and tell the BTChatService to write
+            byte[] send = message.getBytes();
+            mChatService.write(send);
+
+            // Reset out string buffer to zero and clear the edit text field
+            mOutStringBuffer.setLength(0);
+        }
+    }
+
 }

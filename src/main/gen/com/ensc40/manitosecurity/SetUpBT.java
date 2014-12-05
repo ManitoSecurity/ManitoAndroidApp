@@ -32,6 +32,7 @@ import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -44,7 +45,7 @@ import android.widget.Toast;
 /**
  * This activity controls Bluetooth to communicate with other devices.
  */
-public class SetUpBT extends Activity {
+public final class SetUpBT extends Activity {
 
     private static final String TAG = "SetUpBT";
 
@@ -56,7 +57,8 @@ public class SetUpBT extends Activity {
     // Layout Views
     private Button mRefreshButton;
     private ImageView mRefreshIcon;
-    private Animation slideUp, spin;
+    private Animation slideUp, spin, slideDown;
+    private AnimationSet manimationSetStart, manimationSetEnd;
 
 
     // Notification Handler
@@ -66,11 +68,6 @@ public class SetUpBT extends Activity {
      * Name of the connected device
      */
     private String mConnectedDeviceName = null;
-
-    /**
-     * Array adapter for the conversation thread
-     */
-    private ArrayAdapter<String> mConversationArrayAdapter;
 
     /**
      * String buffer for outgoing messages
@@ -99,11 +96,20 @@ public class SetUpBT extends Activity {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         mNotification = new Notification_Service(getApplicationContext());
 
-        mRefreshButton = new Button(this);
+        mRefreshButton = (Button) findViewById(R.id.refresh_button);
         mRefreshIcon = (ImageView) findViewById(R.id.refresh_icon);
+        mRefreshIcon.setVisibility(View.INVISIBLE);
+
+        //Set up animation
         slideUp     = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slide_up);
+        slideDown   = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slide_down);
         spin        = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.spin);
-        spin.setRepeatCount(Animation.INFINITE);
+        setAnimationEnd(slideDown, mRefreshIcon);
+        setAnimationStart(slideUp, mRefreshIcon);
+        setAnimationMiddle(spin, mRefreshIcon, false);
+
+
+
 
         // Register for broadcasts when a device is discovered
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
@@ -156,9 +162,10 @@ public class SetUpBT extends Activity {
             if (mChatService.getState() == BTChatService.STATE_NONE) {
                 // Start the Bluetooth chat services
                 mChatService.start();
-                mBTListClass.makeList(mBluetoothAdapter, this);
             }
         }
+        setupUI();
+
     }
 
     /**
@@ -167,16 +174,14 @@ public class SetUpBT extends Activity {
     private void setupUI() {
         Log.d(TAG, "setupUI()");
 
-        //Get the list of
+        //Get the list of BT devices
+        setUpButton(mRefreshButton);
         mBTList = new ArrayAdapter<String>(this,  R.layout.device_name);
         mNewBTList = new ArrayAdapter<String>(this,  R.layout.device_name);
         mBTList = mBTListClass.makeList(mBluetoothAdapter, getApplicationContext());
         ListView pairedListView = (ListView) findViewById(R.id.btlist);
         pairedListView.setOnItemClickListener(mDeviceClickListener);
         pairedListView.setAdapter(mBTList);
-
-        setUpButton(mRefreshButton);
-        pairedListView.addFooterView(mRefreshButton);
 
         // Initialize the send button with a listener that for click events
         mRefreshButton.setOnClickListener(new View.OnClickListener() {
@@ -185,8 +190,8 @@ public class SetUpBT extends Activity {
                 View view = v.getRootView();
                 if (null != view) {
                     doBTDiscovery();
-                    mRefreshButton.setBackgroundColor(getResources().getColor(R.color.green));
                     mRefreshButton.setText("Scanning...");
+                    mRefreshButton.setBackgroundColor(getResources().getColor(R.color.medium));
                     Log.d(TAG, "refresh button pushed");
                 }
             }
@@ -235,6 +240,7 @@ public class SetUpBT extends Activity {
 
             // Create the result Intent and include the MAC address
             connectDevice(address.toString(), true);
+            Toast.makeText(getApplicationContext(), address, Toast.LENGTH_SHORT).show();
         }
     };
 
@@ -304,7 +310,6 @@ public class SetUpBT extends Activity {
                     switch (msg.arg1) {
                         case BTChatService.STATE_CONNECTED:
                             setStatus(getString(R.string.title_connected_to, mConnectedDeviceName));
-                            mConversationArrayAdapter.clear();
                             break;
                         case BTChatService.STATE_CONNECTING:
                             setStatus(R.string.title_connecting);
@@ -319,7 +324,6 @@ public class SetUpBT extends Activity {
                     byte[] writeBuf = (byte[]) msg.obj;
                     // construct a string from the buffer
                     String writeMessage = new String(writeBuf);
-                    mConversationArrayAdapter.add("Me:  " + writeMessage);
                     break;
                 case Constants.MESSAGE_READ:
                     byte[] readBuf = (byte[]) msg.obj;
@@ -330,7 +334,6 @@ public class SetUpBT extends Activity {
                         Toast.makeText(getApplicationContext(), "BLUETUUTHE!!",
                                 Toast.LENGTH_LONG).show();
                     }
-                    mConversationArrayAdapter.add(mConnectedDeviceName + ":  " + readMessage);
                     break;
                 case Constants.MESSAGE_DEVICE_NAME:
                     // save the connected device's name
@@ -440,8 +443,8 @@ public class SetUpBT extends Activity {
 
         // Request discover from BluetoothAdapter
         mBluetoothAdapter.startDiscovery();
-        spin.setRepeatCount(Animation.INFINITE);
-        mRefreshIcon.startAnimation(spin);
+        setAnimationMiddle(spin, mRefreshIcon, false);
+        mRefreshIcon.startAnimation(slideUp);
     }
 
     /**
@@ -476,10 +479,62 @@ public class SetUpBT extends Activity {
                     Log.d(TAG, "added none");
                     Toast.makeText(getApplicationContext(), "No New Devices Found", Toast.LENGTH_SHORT).show();
                 }
-                mRefreshButton.setBackgroundColor(getResources().getColor(R.color.dark));
                 mRefreshButton.setText("Scan for Devices");
-                spin.setRepeatCount(0);
+                mRefreshButton.setBackgroundColor(getResources().getColor(R.color.dark));
+
+                setAnimationMiddle(spin, mRefreshIcon, true);
+
             }
         }
     };
+
+    private void setAnimationStart(Animation anim, final ImageView v){
+        anim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                v.setVisibility(View.VISIBLE);
+
+            }
+            @Override
+            public void onAnimationRepeat(Animation animation) {}
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                v.startAnimation(spin);
+            }
+
+
+        });
+    }
+    //Repeat animation, then slide down if done
+    private void setAnimationMiddle(Animation anim, final ImageView v, final boolean finished){
+        anim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationRepeat(Animation animation) {}
+            @Override
+            public void onAnimationStart(Animation animation) {}
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                if(finished){
+                    v.getAnimation().cancel();
+                    v.startAnimation(slideDown);
+                }
+                else
+                    v.startAnimation(spin);
+            }
+
+        });
+    }
+
+    private void setAnimationEnd(Animation anim, final ImageView v){
+        anim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {}
+            @Override
+            public void onAnimationRepeat(Animation animation) {}
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                v.setVisibility(View.INVISIBLE);
+            }
+        });
+    }
 }

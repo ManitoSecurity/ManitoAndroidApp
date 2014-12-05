@@ -5,7 +5,7 @@
     <string name="hello_world">Hello world!</string>
 
     <!--  Set Up Text -->
-    <string name="bluetooth_set_up">Bluetooth</string>
+    <string name="bluetooth_set_up">Select Manito from the list of Bluetooth Devices.</string>
     <string name="scan">Scan for Devices</string>
 
     <!--  Menu Items -->
