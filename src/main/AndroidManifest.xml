@@ -38,6 +38,9 @@
         <activity android:name=".DeveloperChat"
             android:windowSoftInputMode="adjustPan" >
         </activity>
+        <activity android:name=".SetUpNetwork" />
+
+        <service android:name=".BTChatService" />
     </application>
 
 </manifest>

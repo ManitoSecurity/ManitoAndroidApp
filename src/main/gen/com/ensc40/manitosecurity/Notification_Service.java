@@ -4,7 +4,6 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.util.Log;
-import android.widget.Toast;
 
 public class Notification_Service{
     private static final String TAG = "NOTIFICATION";
@@ -18,13 +17,11 @@ public class Notification_Service{
     public void displayNotification() {
         Log.d(TAG, "notification");
 
-        Toast.makeText(mContext, "NOTIFICATION!!",
-                Toast.LENGTH_LONG).show();
 
         Notification.Builder  mBuilder = new Notification.Builder(mContext);
 
         mBuilder.setContentTitle("Manito Security");
-        mBuilder.setContentText("I think I just saw something!");
+        mBuilder.setContentText("Motion Detected!");
         mBuilder.setTicker("Detection");
         mBuilder.setSmallIcon(R.drawable.button_on);
         mBuilder.setAutoCancel(true);

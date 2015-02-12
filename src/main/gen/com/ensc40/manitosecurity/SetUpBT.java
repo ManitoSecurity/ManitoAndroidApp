@@ -82,7 +82,7 @@ public final class SetUpBT extends Activity {
     /**
      * Member object for the chat services
      */
-    private BTChatService mChatService = null;
+    private BTChat mChatService = null;
     private BTList mBTListClass = new BTList();
     private ArrayAdapter<String> mBTList;
     private ArrayAdapter<String> mNewBTList;
@@ -159,7 +159,7 @@ public final class SetUpBT extends Activity {
         // onResume() will be called when ACTION_REQUEST_ENABLE activity returns.
         if (mChatService != null) {
             // Only if the state is STATE_NONE, do we know that we haven't started already
-            if (mChatService.getState() == BTChatService.STATE_NONE) {
+            if (mChatService.getState() == BTChat.STATE_NONE) {
                 // Start the Bluetooth chat services
                 mChatService.start();
             }
@@ -197,8 +197,8 @@ public final class SetUpBT extends Activity {
             }
         });
 
-        // Initialize the BTChatService to perform bluetooth connections
-        mChatService = new BTChatService(this, mHandler);
+        // Initialize the BTChat to perform bluetooth connections
+        mChatService = new BTChat(this, mHandler);
 
         // Initialize the buffer for outgoing messages
         mOutStringBuffer = new StringBuffer("");
@@ -251,14 +251,14 @@ public final class SetUpBT extends Activity {
      */
     private void sendMessage(String message) {
         // Check that we're actually connected before trying anything
-        if (mChatService.getState() != BTChatService.STATE_CONNECTED) {
+        if (mChatService.getState() != BTChat.STATE_CONNECTED) {
             Toast.makeText(this, "Not Connected", Toast.LENGTH_SHORT).show();
             return;
         }
 
         // Check that there's actually something to send
         if (message.length() > 0) {
-            // Get the message bytes and tell the BTChatService to write
+            // Get the message bytes and tell the BTChat to write
             byte[] send = message.getBytes();
             mChatService.write(send);
 
@@ -300,7 +300,7 @@ public final class SetUpBT extends Activity {
     }
 
     /**
-     * The Handler that gets information back from the BTChatService
+     * The Handler that gets information back from the BTChat
      */
     private final Handler mHandler = new Handler() {
         @Override
@@ -308,14 +308,14 @@ public final class SetUpBT extends Activity {
             switch (msg.what) {
                 case Constants.MESSAGE_STATE_CHANGE:
                     switch (msg.arg1) {
-                        case BTChatService.STATE_CONNECTED:
+                        case BTChat.STATE_CONNECTED:
                             setStatus(getString(R.string.title_connected_to, mConnectedDeviceName));
                             break;
-                        case BTChatService.STATE_CONNECTING:
+                        case BTChat.STATE_CONNECTING:
                             setStatus(R.string.title_connecting);
                             break;
-                        case BTChatService.STATE_LISTEN:
-                        case BTChatService.STATE_NONE:
+                        case BTChat.STATE_LISTEN:
+                        case BTChat.STATE_NONE:
                             setStatus(R.string.title_not_connected);
                             break;
                     }
@@ -329,7 +329,7 @@ public final class SetUpBT extends Activity {
                     byte[] readBuf = (byte[]) msg.obj;
                     // construct a string from the valid bytes in the buffer
                     String readMessage = new String(readBuf, 0, msg.arg1);
-                    if(readMessage.contains("detection")){
+                    if(readMessage.contains("X")){
                         mNotification.displayNotification();
                         Toast.makeText(getApplicationContext(), "BLUETUUTHE!!",
                                 Toast.LENGTH_LONG).show();

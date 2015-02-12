@@ -20,10 +20,25 @@ public class MainActivity extends Activity {
     SharedPreferences.Editor editor;
     String TAG = "MAINTAG";
 
+    Handler.Callback realCallback = null;
+    Handler handler = new Handler() {
+        public void handleMessage(android.os.Message msg) {
+            if (realCallback != null) {
+                realCallback.handleMessage(msg);
+            }
+        };
+    };
+    public Handler getHandler() {
+        return handler;
+    }
+    public void setCallBack(Handler.Callback callback) {
+        this.realCallback = callback;
+    }
+
     /**
      * Member object for the chat services
      */
-    private BTChatService mChatService = null;
+    private BTChat mChatService = null;
     private StringBuffer mOutStringBuffer;
 
 
@@ -39,10 +54,9 @@ public class MainActivity extends Activity {
 
         //Set up finished
         //if(!settings.getBoolean("setUp", false)) {setUpFinished();}
-        mChatService = new BTChatService(this, mHandler);
+        mChatService = new BTChat(this, mHandler);
         mOutStringBuffer = new StringBuffer("");
         setUpUI();
-
     }
 
     @Override
@@ -147,14 +161,14 @@ public class MainActivity extends Activity {
      */
     private void sendMessage(String message) {
         // Check that we're actually connected before trying anything
-        if (mChatService.getState() != BTChatService.STATE_CONNECTED) {
+        if (mChatService.getState() != BTChat.STATE_CONNECTED) {
             Toast.makeText(this, "Not Connected", Toast.LENGTH_SHORT).show();
             return;
         }
 
         // Check that there's actually something to send
         if (message.length() > 0) {
-            // Get the message bytes and tell the BTChatService to write
+            // Get the message bytes and tell the BTChat to write
             byte[] send = message.getBytes();
             mChatService.write(send);
 
