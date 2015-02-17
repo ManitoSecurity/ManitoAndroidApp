@@ -32,8 +32,8 @@
         </activity>
         <activity android:name=".SetUpWifi" />
         <activity android:name=".SetUpBT" />
+        <activity android:name=".SetUpBlueTooth" />
         <activity android:name=".BTDeviceList" />
-        <activity android:name=".Notification_Service" />
 
         <activity android:name=".DeveloperChat"
             android:windowSoftInputMode="adjustPan" >

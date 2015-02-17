@@ -13,9 +13,17 @@ import android.widget.Toast;
  * Created by Collin on 12/4/14.
  */
 public class BTChatService extends Service {
-    private BTChat mChatService = null;
+    public BTChat mChatService = null;
     private final IBinder mBinder = new LocalBinder();
+    private static BTChatService mInstance = null;
 
+    public static BTChatService getInstance(){
+        if(mInstance == null)
+        {
+            mInstance = new BTChatService();
+        }
+        return mInstance;
+    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -23,18 +31,37 @@ public class BTChatService extends Service {
             mChatService = new BTChat(getApplicationContext(), mHandler);
         }
         return Service.START_STICKY;
-
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        mHandler = ((ManitoApplication) getApplication()).getHandler();
+        //mHandler = ((ManitoApplication) getApplication()).getHandler();
         return mBinder;
     }
 
     public class LocalBinder extends Binder {
         BTChatService getService() {
             return BTChatService.this;
+        }
+    }
+
+    /**
+     * Sends a message.
+     *
+     * @param message A string of text to send.
+     */
+    private void sendMessage(String message) {
+        // Check that we're actually connected before trying anything
+        if (mChatService.getState() != BTChat.STATE_CONNECTED) {
+            Toast.makeText(this, "Not Connected", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Check that there's actually something to send
+        if (message.length() > 0) {
+            // Get the message bytes and tell the BTChat to write
+            byte[] send = message.getBytes();
+            mChatService.write(send);
         }
     }
 
