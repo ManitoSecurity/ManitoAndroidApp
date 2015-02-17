@@ -173,6 +173,7 @@ public final class SetUpBlueTooth extends Activity {
             // Otherwise, setup the chat session
         } else if (mService.mChatService == null) {
             setupUI();
+
         }
     }
 
